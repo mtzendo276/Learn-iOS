@@ -1,0 +1,11 @@
+{
+  {
+    type: "type_a",
+    value: "hello this is type a"
+  },
+  {
+    type: "type_b",
+    value: "hello this is type b",
+    isOn: true
+  }
+}
