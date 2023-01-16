@@ -18,6 +18,9 @@ struct CalendarView: View {
     private let dayFormatter: DateFormatter
     private let weekDayFormatter: DateFormatter
     private static var now = Date()
+    
+    private let daysInWeek = 7
+    private let dayItemSize: CGFloat = 40
         
     @State private var selectedDate = Self.now
     
@@ -29,192 +32,101 @@ struct CalendarView: View {
     
     var body: some View {
         VStack {
-            CalendarViewComponent(
-                calendar: calendar,
-                date: $selectedDate,
-                content: { date in
-                    ZStack {
-                        if calendar.isDateInToday(date) && !calendar.isDateInWeekend(date) {
-                            Circle()
-                                .stroke(.black, lineWidth: 1)
-                                .frame(width: 40, height: 40)
-                        }
-                        if calendar.isDate(date, inSameDayAs: selectedDate) && !calendar.isDateInWeekend(date) {
-                            Circle()
-                                .fill(.blue)
-                                .frame(width: 40, height: 40)
-                        }
-                        if calendar.isDateInWeekend(date) {
-                            Circle()
-                                .fill(.gray)
-                                .frame(width: 40, height: 40)
-                        }
-                        Button(action: { selectedDate = date }) {
-                            Text(dayFormatter.string(from: date))
-                                .padding(6)
-                                .frame(width: 33, height: 33, alignment: .center)
-                                .foregroundColor(calendar.isDate(date, inSameDayAs: selectedDate) ? .white : .primary)
-                        }
-                        .disabled(calendar.isDateInWeekend(date))
-                        
-                    }
-                },
-                trailing: { date in
-                    ZStack {
-                        if calendar.isDateInWeekend(date) {
-                            Circle()
-                                .fill(.gray)
-                                .frame(width: 40, height: 40)
-                        }
-                        Text(dayFormatter.string(from: date))
-                            .foregroundColor(.secondary)
-                    }
-                },
-                header: { date in
-                    Text(weekDayFormatter.string(from: date).uppercased())
-                        .fontWeight(.bold)
-                },
-                title: { date in
-                    HStack {
-                        Button {
-                            guard let newDate = calendar.date(
-                                byAdding: .month,
-                                value: -1,
-                                to: selectedDate
-                            ) else {
-                                return
-                            }
-                            selectedDate = newDate
-                            
-                        } label: {
-                            Label(
-                                title: { Text("Previous") },
-                                icon: {
-                                    Image(systemName: "chevron.left")
-                                        .font(.title2)
-                                        .foregroundColor(.black)
-                                }
-                            )
-                            .labelStyle(IconOnlyLabelStyle())
-                            .padding(.horizontal)
-                        }
-                        
-                        Spacer()
-                        
-                        Button {
-                            selectedDate = Date.now
-                        } label: {
-                            Text(monthFormatter.string(from: date).uppercased())
-                                .foregroundColor(.black)
-                                .font(.title2)
-                                .padding(2)
-                        }
-                        
-                        Spacer()
-                        
-                        Button {
-                            guard let newDate = calendar.date(
-                                byAdding: .month,
-                                value: 1,
-                                to: selectedDate
-                            ) else {
-                                return
-                            }
-                            
-                            selectedDate = newDate
-                            
-                        } label: {
-                            Label(
-                                title: { Text("Next") },
-                                icon: {
-                                    Image(systemName: "chevron.right")
-                                        .font(.title2)
-                                        .foregroundColor(.black)
-                                }
-                            )
-                            .labelStyle(IconOnlyLabelStyle())
-                            .padding(.horizontal)
-                        }
-                    }
-                }
-            )
-            .equatable()
-            Spacer()
+            TitleView()
+            ContentView()
         }
     }
     
 }
 
-// MARK: - Component
-
-public struct CalendarViewComponent<Day: View, Header: View, Title: View, Trailing: View>: View {
-    @Environment(\.colorScheme) var colorScheme
-
-    // Injected dependencies
-    private var calendar: Calendar
-    @Binding private var date: Date
-    private let content: (Date) -> Day
-    private let trailing: (Date) -> Trailing
-    private let header: (Date) -> Header
-    private let title: (Date) -> Title
+extension CalendarView {
     
-    // Constants
-    private let daysInWeek = 7
-    
-    public init(
-        calendar: Calendar,
-        date: Binding<Date>,
-        @ViewBuilder content: @escaping (Date) -> Day,
-        @ViewBuilder trailing: @escaping (Date) -> Trailing,
-        @ViewBuilder header: @escaping (Date) -> Header,
-        @ViewBuilder title: @escaping (Date) -> Title
-    ) {
-        self.calendar = calendar
-        self._date = date
-        self.content = content
-        self.trailing = trailing
-        self.header = header
-        self.title = title
+    @ViewBuilder
+    func TitleView() -> some View {
+        HStack {
+            Button {
+                guard let newDate = calendar.date(byAdding: .month, value: -1,  to: selectedDate) else { return }
+                selectedDate = newDate
+            } label: {
+                Image(systemName: "chevron.left")
+                          .font(.title2)
+                          .foregroundColor(.black)
+            }
+            Spacer()
+            Text(monthFormatter.string(from: selectedDate.startOfMonth(using: calendar)).uppercased())
+                .foregroundColor(.black)
+                .font(.title2)
+            Spacer()
+            Button {
+                guard let newDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) else { return }
+                selectedDate = newDate
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.title2)
+                    .foregroundColor(.black)
+            }
+        }
     }
     
-    public var body: some View {
-        let month = date.startOfMonth(using: calendar)
+    @ViewBuilder
+    func ContentView() -> some View {
+        let month = selectedDate.startOfMonth(using: calendar)
         let days = makeDays()
-        
         VStack {
-            Section(header: title(month)) { }
-            VStack {
-                LazyVGrid(columns: Array(repeating: GridItem(), count: daysInWeek)) {
-                    ForEach(days.prefix(daysInWeek), id: \.self, content: header)
+            LazyVGrid(columns: Array(repeating: GridItem(), count: daysInWeek)) {
+                ForEach(days.prefix(daysInWeek), id: \.self) { date in
+                    Text(weekDayFormatter.string(from: date).uppercased())
+                        .fontWeight(.bold)
                 }
-                LazyVGrid(columns: Array(repeating: GridItem(), count: daysInWeek)) {
-                    ForEach(days, id: \.self) { date in
-                        if calendar.isDate(date, equalTo: month, toGranularity: .month) {
-                            content(date)
-                        } else {
-                            trailing(date)
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(), count: daysInWeek)) {
+                ForEach(days, id: \.self) { date in
+                    if calendar.isDate(date, equalTo: month, toGranularity: .month) {
+                        ZStack {
+                            if calendar.isDateInToday(date) && !calendar.isDateInWeekend(date) {
+                                Circle()
+                                    .stroke(.black, lineWidth: 1)
+                                    .frame(width: dayItemSize, height: dayItemSize)
+                            }
+                            if calendar.isDate(date, inSameDayAs: selectedDate) && !calendar.isDateInWeekend(date) {
+                                Circle()
+                                    .fill(.blue)
+                                    .frame(width: dayItemSize, height: dayItemSize)
+                            }
+                            if calendar.isDateInWeekend(date) {
+                                Circle()
+                                    .fill(.gray)
+                                    .frame(width: dayItemSize, height: dayItemSize)
+                            }
+                            Button(action: { selectedDate = date }) {
+                                Text(dayFormatter.string(from: date))
+                                    .frame(width: dayItemSize, height: dayItemSize, alignment: .center)
+                                    .foregroundColor(calendar.isDate(date, inSameDayAs: selectedDate) ? .white : .primary)
+                            }
+                            .disabled(calendar.isDateInWeekend(date))
+                        }
+                    } else {
+                        ZStack {
+                            if calendar.isDateInWeekend(date) {
+                                Circle()
+                                    .fill(.gray)
+                                    .frame(width: dayItemSize, height: dayItemSize)
+                            }
+                            Text(dayFormatter.string(from: date))
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
             }
         }
     }
-}
-
-// MARK: - Equatable
-extension CalendarViewComponent: Equatable {
-    
-    public static func == (lhs: CalendarViewComponent<Day, Header, Title, Trailing>, rhs: CalendarViewComponent<Day, Header, Title, Trailing>) -> Bool {
-        lhs.calendar == rhs.calendar && lhs.date == rhs.date
-    }
     
 }
 
-// MARK: - Helpers
-private extension CalendarViewComponent {
+private extension CalendarView {
     
     func makeDays() -> [Date] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: date),
+        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedDate),
               let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start),
               let monthLastWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.end - 1)
         else {
@@ -229,24 +141,13 @@ private extension CalendarViewComponent {
 
 private extension Calendar {
     
-    func generateDates(
-        for dateInterval: DateInterval,
-        matching components: DateComponents
-    ) -> [Date] {
+    func generateDates(for dateInterval: DateInterval, matching components: DateComponents) -> [Date] {
         var dates = [dateInterval.start]
-
-        enumerateDates(
-            startingAfter: dateInterval.start,
-            matching: components,
-            matchingPolicy: .nextTime
-        ) { date, _, stop in
-            guard let date = date else { return }
-
-            guard date < dateInterval.end else {
+        enumerateDates(startingAfter: dateInterval.start, matching: components, matchingPolicy: .nextTime) { date, _, stop in
+            guard let date = date, date < dateInterval.end else {
                 stop = true
                 return
             }
-
             dates.append(date)
         }
         return dates
