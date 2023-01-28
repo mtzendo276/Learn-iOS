@@ -1,6 +1,6 @@
 import UIKit
 
-var greeting = "Hello, playground"
+//ref: https://www.avanderlee.com/swift/async-let-asynchronous-functions-in-parallel/
 
 func loadImage(index: Int) async -> UIImage {
     let imageURL = URL(string: "https://picsum.photos/200/300")!
