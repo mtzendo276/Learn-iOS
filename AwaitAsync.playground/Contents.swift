@@ -32,8 +32,6 @@ extension Task {
  Sometimes we have several independent tasks we need to complete. Let’s take an example when we want to preload messages for conversations. The code snippet below takes an array of conversations and then starts loading messages for each of the conversation. Since conversations are not related to each other, we can do this concurrently. This is what a TaskGroup enables us to do. We create a group and add tasks to it. Tasks in the group can run at the same time, which can be a time-saver.
  */
 
-
-
 //func preloadMessages(for conversations: [Conversation]) async {
 //  await withThrowingTaskGroup(of: Void.self) { taskGroup in
 //    for conversation in conversations {
